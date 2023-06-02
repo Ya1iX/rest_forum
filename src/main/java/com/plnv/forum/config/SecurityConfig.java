@@ -1,5 +1,6 @@
 package com.plnv.forum.config;
 
+import com.plnv.forum.exception.ExceptionsHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

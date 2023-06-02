@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -21,5 +22,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Modifying
     @Query("UPDATE User u SET u.signedIn = :date WHERE u.username = :username")
-    void updateSignedIn(@Param("date") Date date, @Param("username") String username);
+    void updateSignedIn(@Param("date") LocalDateTime date, @Param("username") String username);
 }

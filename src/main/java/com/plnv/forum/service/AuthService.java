@@ -1,23 +1,21 @@
 package com.plnv.forum.service;
 
 import com.plnv.forum.entity.User;
-import com.plnv.forum.model.AuthenticationResponse;
-import com.plnv.forum.model.LoginRequest;
-import com.plnv.forum.model.RegisterRequest;
-import com.plnv.forum.model.Role;
+import com.plnv.forum.exception.AccountLockedPermanentlyException;
+import com.plnv.forum.exception.AccountLockedTemporarilyException;
+import com.plnv.forum.model.*;
 import com.plnv.forum.repository.UserRepository;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.security.auth.login.AccountLockedException;
-import java.util.Date;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @Service
@@ -28,8 +26,8 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public AuthenticationResponse register(RegisterRequest request, Role role) {
-        var user = User.builder()
+    public Response register(RegisterRequest request, Role role) {
+        User user = User.builder()
                 .username(request.getUsername())
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
@@ -37,17 +35,20 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(role)
                 .isLocked(false)
-                .createdAt(new Date(System.currentTimeMillis()))
+                .createdAt(LocalDateTime.now())
                 .build();
         repository.save(user);
-        var jwt = jwtService.generateToken(user);
-        return AuthenticationResponse.builder()
-                .token(jwt)
+        String jwt = jwtService.generateToken(user);
+        return Response.builder()
+                .timestamp(LocalDateTime.now())
+                .statusCode(HttpStatus.OK.value())
+                .httpStatus(HttpStatus.OK)
+                .data(Map.of("token", jwt))
                 .build();
     }
 
-    public AuthenticationResponse login(LoginRequest request) {
-        var user = repository.findByUsername(request.getUsername())
+    public Response login(LoginRequest request) {
+        User user = repository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         user = user.isAccountNonLocked() ? user : checkLockExpiration(user);
 
@@ -58,14 +59,17 @@ public class AuthService {
                 )
         );
 
-        var jwt = jwtService.generateToken(user);
-        repository.updateSignedIn(new Date(System.currentTimeMillis()), request.getUsername());
-        return AuthenticationResponse.builder()
-                .token(jwt)
+        String jwt = jwtService.generateToken(user);
+        repository.updateSignedIn(LocalDateTime.now(), request.getUsername());
+        return Response.builder()
+                .timestamp(LocalDateTime.now())
+                .statusCode(HttpStatus.OK.value())
+                .httpStatus(HttpStatus.OK)
+                .data(Map.of("token", jwt))
                 .build();
     }
 
-    public AuthenticationResponse makeFirstAdmin(RegisterRequest request) {
+    public Response makeFirstAdmin(RegisterRequest request) {
         if (repository.findByRole(Role.ADMIN).isEmpty()) {
             return register(request, Role.ADMIN);
         }
@@ -73,17 +77,17 @@ public class AuthService {
     }
 
     private User checkLockExpiration(User user) {
-        Date currentDate = new Date(System.currentTimeMillis());
-        Date lockExpiration = user.getLockExpiration();
+        LocalDateTime currentDate = LocalDateTime.now();
+        LocalDateTime lockExpiration = user.getLockExpiration();
         if (lockExpiration == null) {
-            throw new JwtException("ACCESS DENIED: Account is locked permanently");
+            throw new AccountLockedPermanentlyException();
         }
-        if (lockExpiration.before(currentDate)) {
+        if (lockExpiration.isBefore(currentDate)) {
             user.setLockExpiration(null);
             user.setIsLocked(false);
             repository.save(user);
             return user;
         }
-        throw new JwtException("ACCESS DENIED: Account is locked by " + lockExpiration);
+        throw new AccountLockedTemporarilyException(lockExpiration);
     }
 }

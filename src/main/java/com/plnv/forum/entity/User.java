@@ -1,5 +1,6 @@
 package com.plnv.forum.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.plnv.forum.model.Role;
 import jakarta.persistence.*;
@@ -12,8 +13,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,10 +62,10 @@ public class User implements UserDetails {
 
     @Column(nullable = false)
     @NotNull(message = "Account creation date cannot be null")
-    private Date createdAt;
+    private LocalDateTime createdAt;
 
-    private Date signedIn;
-    private Date lockExpiration;
+    private LocalDateTime signedIn;
+    private LocalDateTime lockExpiration;
     private String avatarURL;
 
     @Override
@@ -72,6 +73,7 @@ public class User implements UserDetails {
         return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
+    @JsonIgnore
     @Override
     public boolean isAccountNonExpired() {
         return true;
@@ -82,11 +84,13 @@ public class User implements UserDetails {
         return !isLocked;
     }
 
+    @JsonIgnore
     @Override
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
+    @JsonIgnore
     @Override
     public boolean isEnabled() {
         return true;
