@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    platform: postgres
+    url: jdbc:postgresql://localhost:5432/forum
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
