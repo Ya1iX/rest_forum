@@ -1,4 +1,4 @@
-package com.plnv.forum.exception;
+package com.plnv.forum.handlers;
 
 import com.plnv.forum.model.Response;
 import io.jsonwebtoken.JwtException;
@@ -7,11 +7,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.WebRequest;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -114,8 +114,8 @@ public class ExceptionsHandler {
         );
     }
 
-    @ExceptionHandler({ AccountLockedPermanentlyException.class, AccountLockedTemporarilyException.class })
-    public ResponseEntity<Response> handleJwtException(RuntimeException e) {
+    @ExceptionHandler({UsernameNotFoundException.class, AuthenticationException.class})
+    public ResponseEntity<Response> handleAuthenticationException(AuthenticationException e, HttpStatus status) {
         log.error(e.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
                 Response.builder()
@@ -123,19 +123,6 @@ public class ExceptionsHandler {
                         .statusCode(HttpStatus.FORBIDDEN.value())
                         .httpStatus(HttpStatus.FORBIDDEN)
                         .reason(e.getMessage())
-                        .build()
-        );
-    }
-
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Object> handleAccessDeniedException(Exception ex, WebRequest request) {
-        log.error(ex.getMessage());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                Response.builder()
-                        .timestamp(LocalDateTime.now())
-                        .statusCode(HttpStatus.FORBIDDEN.value())
-                        .httpStatus(HttpStatus.FORBIDDEN)
-                        .reason(ex.getMessage())
                         .build()
         );
     }

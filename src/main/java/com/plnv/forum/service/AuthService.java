@@ -1,14 +1,15 @@
 package com.plnv.forum.service;
 
 import com.plnv.forum.entity.User;
-import com.plnv.forum.exception.AccountLockedPermanentlyException;
-import com.plnv.forum.exception.AccountLockedTemporarilyException;
-import com.plnv.forum.model.*;
+import com.plnv.forum.model.LoginRequest;
+import com.plnv.forum.model.RegisterRequest;
+import com.plnv.forum.model.Response;
+import com.plnv.forum.model.Role;
 import com.plnv.forum.repository.UserRepository;
-import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -80,7 +81,7 @@ public class AuthService {
         LocalDateTime currentDate = LocalDateTime.now();
         LocalDateTime lockExpiration = user.getLockExpiration();
         if (lockExpiration == null) {
-            throw new AccountLockedPermanentlyException();
+            throw new LockedException("Account is permanently locked");
         }
         if (lockExpiration.isBefore(currentDate)) {
             user.setLockExpiration(null);
@@ -88,6 +89,6 @@ public class AuthService {
             repository.save(user);
             return user;
         }
-        throw new AccountLockedTemporarilyException(lockExpiration);
+        throw new LockedException("Account is temporarily locked by " + lockExpiration);
     }
 }
