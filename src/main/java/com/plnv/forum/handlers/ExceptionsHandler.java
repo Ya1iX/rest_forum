@@ -2,6 +2,8 @@ package com.plnv.forum.handlers;
 
 import com.plnv.forum.model.Response;
 import io.jsonwebtoken.JwtException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,8 @@ import java.time.LocalDateTime;
 import java.util.InputMismatchException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
@@ -115,7 +119,7 @@ public class ExceptionsHandler {
     }
 
     @ExceptionHandler({UsernameNotFoundException.class, AuthenticationException.class})
-    public ResponseEntity<Response> handleAuthenticationException(AuthenticationException e, HttpStatus status) {
+    public ResponseEntity<Response> handleAuthenticationException(AuthenticationException e) {
         log.error(e.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
                 Response.builder()
@@ -123,6 +127,19 @@ public class ExceptionsHandler {
                         .statusCode(HttpStatus.FORBIDDEN.value())
                         .httpStatus(HttpStatus.FORBIDDEN)
                         .reason(e.getMessage())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Response> handleConstraintViolationException(ConstraintViolationException e) {
+        log.error(e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                Response.builder()
+                        .timestamp(LocalDateTime.now())
+                        .statusCode(HttpStatus.BAD_REQUEST.value())
+                        .httpStatus(HttpStatus.BAD_REQUEST)
+                        .reason(e.getConstraintViolations().stream().map(ConstraintViolation::getMessage).collect(Collectors.joining("; ")))
                         .build()
         );
     }

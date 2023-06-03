@@ -14,3 +14,5 @@ spring:
     properties:
       hibernate:
         format_sql: true
+jwt:
+  key: 68566D5970337336763979244226452948404D635166546A576E5A7234743777
