@@ -1,6 +1,5 @@
 package com.plnv.forum.config;
 
-import com.plnv.forum.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

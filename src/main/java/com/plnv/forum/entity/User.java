@@ -1,5 +1,6 @@
 package com.plnv.forum.entity;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.plnv.forum.model.Role;
@@ -64,6 +65,10 @@ public class User implements UserDetails {
     @NotNull(message = "Account creation date cannot be null")
     private LocalDateTime createdAt;
 
+    @OneToMany
+    @JoinColumn(name = "user_id")
+    private List<Message> messages;
+
     private LocalDateTime signedIn;
     private LocalDateTime lockExpiration;
     private String avatarURL;
@@ -71,6 +76,11 @@ public class User implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role.name()));
+    }
+
+    @JsonGetter("messages")
+    public Integer getMessages() {
+        return messages.size();
     }
 
     @JsonIgnore

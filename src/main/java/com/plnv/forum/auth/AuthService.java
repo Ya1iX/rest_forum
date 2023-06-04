@@ -1,5 +1,6 @@
-package com.plnv.forum.service;
+package com.plnv.forum.auth;
 
+import com.plnv.forum.config.JwtService;
 import com.plnv.forum.entity.User;
 import com.plnv.forum.model.LoginRequest;
 import com.plnv.forum.model.RegisterRequest;

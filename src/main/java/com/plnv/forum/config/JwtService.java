@@ -1,4 +1,4 @@
-package com.plnv.forum.service;
+package com.plnv.forum.config;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -7,7 +7,6 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +17,6 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Service
-@EnableConfigurationProperties
 public class JwtService {
     @Value("${jwt.key}")
     private String ENCRYPTION_KEY;

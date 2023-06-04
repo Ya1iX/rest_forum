@@ -1,7 +1,10 @@
 package com.plnv.forum.controller;
 
-import com.plnv.forum.model.*;
-import com.plnv.forum.service.AuthService;
+import com.plnv.forum.model.LoginRequest;
+import com.plnv.forum.model.RegisterRequest;
+import com.plnv.forum.model.Response;
+import com.plnv.forum.model.Role;
+import com.plnv.forum.auth.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
