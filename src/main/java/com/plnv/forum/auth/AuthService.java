@@ -8,6 +8,7 @@ import com.plnv.forum.model.Response;
 import com.plnv.forum.model.Role;
 import com.plnv.forum.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.ObjectDeletedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.LockedException;
@@ -36,7 +37,9 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(role)
+                .isVerified(false)
                 .isLocked(false)
+                .isDeleted(false)
                 .createdAt(LocalDateTime.now())
                 .build();
         repository.save(user);
@@ -52,7 +55,7 @@ public class AuthService {
     public Response login(LoginRequest request) {
         User user = repository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-        user = user.isAccountNonLocked() ? user : checkLockExpiration(user);
+        user = (user.isAccountNonLocked() || user.getIsDeleted() ) ? user : checkAccountValidity(user);
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -78,11 +81,14 @@ public class AuthService {
         throw new NoSuchElementException("Page not found");
     }
 
-    private User checkLockExpiration(User user) {
+    private User checkAccountValidity(User user) {
         LocalDateTime currentDate = LocalDateTime.now();
         LocalDateTime lockExpiration = user.getLockExpiration();
         if (lockExpiration == null) {
             throw new LockedException("Account is permanently locked");
+        }
+        if (user.getIsDeleted()) {
+            throw new IllegalStateException("Account is deleted");
         }
         if (lockExpiration.isBefore(currentDate)) {
             user.setLockExpiration(null);

@@ -58,8 +58,16 @@ public class User implements UserDetails {
     private Role role;
 
     @Column(nullable = false)
-    @NotNull(message = "User's lock status cannot be null")
+    @NotNull(message = "User's verified flag cannot be null")
+    private Boolean isVerified;
+
+    @Column(nullable = false)
+    @NotNull(message = "User's locked flag cannot be null")
     private Boolean isLocked;
+
+    @Column(nullable = false)
+    @NotNull(message = "User's deleted flag cannot be null")
+    private Boolean isDeleted;
 
     @Column(nullable = false)
     @NotNull(message = "Account creation date cannot be null")
@@ -69,10 +77,15 @@ public class User implements UserDetails {
     @JoinColumn(name = "user_id")
     private List<Message> messages;
 
+    @OneToMany
+    @JoinColumn(name = "user_id")
+    private List<Topic> topics;
+
     private LocalDateTime signedIn;
     private LocalDateTime lockExpiration;
     private String avatarURL;
 
+    @JsonIgnore
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role.name()));
@@ -80,7 +93,12 @@ public class User implements UserDetails {
 
     @JsonGetter("messages")
     public Integer getMessages() {
-        return messages.size();
+        return messages == null ? 0 : messages.size();
+    }
+
+    @JsonGetter("topics")
+    public Integer getTopics() {
+        return topics == null ? 0 : topics.size();
     }
 
     @JsonIgnore
@@ -89,6 +107,7 @@ public class User implements UserDetails {
         return true;
     }
 
+    @JsonIgnore
     @Override
     public boolean isAccountNonLocked() {
         return !isLocked;

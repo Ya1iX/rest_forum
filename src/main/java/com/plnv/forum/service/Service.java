@@ -1,9 +1,11 @@
 package com.plnv.forum.service;
 
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 
 public interface Service<T> {
-    List<T> list(int page, int size);
-    List<T> readAll();
-    T save(T entity);
+    List<T> readAll(Pageable pageable);
+    List<T> readAllDeleted(Pageable pageable);
+    T postNew(T entity);
 }

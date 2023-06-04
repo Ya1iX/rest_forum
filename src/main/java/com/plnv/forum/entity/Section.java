@@ -1,6 +1,7 @@
 package com.plnv.forum.entity;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -49,12 +50,9 @@ public class Section {
     private Boolean isPinned;
 
     @Column(nullable = false)
-    private Boolean isUsersAllowed;
-
-    @Column(nullable = false)
     private Boolean isSecured;
 
-    @Column(nullable = false)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @Column(nullable = false)
@@ -71,6 +69,6 @@ public class Section {
 
     @JsonGetter("topics")
     public Integer getTopics() {
-        return this.topics.size();
+        return topics == null ? 0 : topics.size();
     }
 }

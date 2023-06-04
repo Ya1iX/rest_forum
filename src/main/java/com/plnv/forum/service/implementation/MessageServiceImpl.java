@@ -4,7 +4,7 @@ import com.plnv.forum.entity.Message;
 import com.plnv.forum.repository.MessageRepository;
 import com.plnv.forum.service.MessageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,11 +14,21 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
-    private MessageRepository repository;
+    private final MessageRepository repository;
 
     @Override
     public Message readById(UUID id) {
         return repository.findById(id).orElseThrow(() -> new NoSuchElementException("Message not found by id: " + id));
+    }
+
+    @Override
+    public List<Message> readAllDeleted(Pageable pageable) {
+        return null;
+    }
+
+    @Override
+    public Message postNew(Message entity) {
+        return null;
     }
 
     @Override
@@ -27,17 +37,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public List<Message> list(int page, int size) {
-        return repository.findAll(PageRequest.of(page, size)).toList();
-    }
-
-    @Override
-    public List<Message> readAll() {
-        return repository.findAll();
-    }
-
-    @Override
-    public Message save(Message entity) {
-        return repository.save(entity);
+    public List<Message> readAll(Pageable pageable) {
+        return repository.findAll(pageable).toList();
     }
 }

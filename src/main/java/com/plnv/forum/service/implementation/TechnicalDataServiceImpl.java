@@ -4,7 +4,7 @@ import com.plnv.forum.entity.TechnicalData;
 import com.plnv.forum.repository.TechnicalDataRepository;
 import com.plnv.forum.service.TechnicalDataService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,21 +13,21 @@ import java.util.NoSuchElementException;
 @Service
 @RequiredArgsConstructor
 public class TechnicalDataServiceImpl implements TechnicalDataService {
-    private TechnicalDataRepository repository;
+    private final TechnicalDataRepository repository;
 
     @Override
-    public List<TechnicalData> list(int page, int size) {
-        return repository.findAll(PageRequest.of(page, size)).toList();
+    public List<TechnicalData> readAll(Pageable pageable) {
+        return repository.findAll(pageable).toList();
     }
 
     @Override
-    public List<TechnicalData> readAll() {
-        return repository.findAll();
+    public List<TechnicalData> readAllDeleted(Pageable pageable) {
+        return null;
     }
 
     @Override
-    public TechnicalData save(TechnicalData entity) {
-        return repository.save(entity);
+    public TechnicalData postNew(TechnicalData entity) {
+        return null;
     }
 
     @Override

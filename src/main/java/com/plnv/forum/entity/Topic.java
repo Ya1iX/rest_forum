@@ -1,8 +1,8 @@
 package com.plnv.forum.entity;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,6 +38,9 @@ public class Topic {
     @JoinColumn(name = "topic_id")
     private List<Message> messages;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    private User user;
+
     @Column(nullable = false)
     @Size(min = 4, message = "Topic's name cannot be shorter than 4 symbols")
     @Size(max = 50, message = "Topic's name cannot be longer than 50 symbols")
@@ -64,7 +67,7 @@ public class Topic {
     @Column(nullable = false)
     private Boolean isSecured;
 
-    @Column(nullable = false)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @Column(nullable = false)
@@ -87,6 +90,11 @@ public class Topic {
 
     @JsonGetter("messages")
     public Integer getMessages() {
-        return messages.size();
+        return messages == null ? 0 : messages.size();
+    }
+
+    @JsonGetter("user")
+    public String getUser() {
+        return user.getUsername();
     }
 }

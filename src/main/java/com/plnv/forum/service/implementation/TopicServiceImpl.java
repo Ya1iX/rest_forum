@@ -4,7 +4,7 @@ import com.plnv.forum.entity.Topic;
 import com.plnv.forum.repository.TopicRepository;
 import com.plnv.forum.service.TopicService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,21 +13,21 @@ import java.util.NoSuchElementException;
 @Service
 @RequiredArgsConstructor
 public class TopicServiceImpl implements TopicService {
-    private TopicRepository repository;
+    private final TopicRepository repository;
 
     @Override
-    public List<Topic> list(int page, int size) {
-        return repository.findAll(PageRequest.of(page, size)).toList();
+    public List<Topic> readAll(Pageable pageable) {
+        return repository.findAll(pageable).toList();
     }
 
     @Override
-    public List<Topic> readAll() {
-        return repository.findAll();
+    public List<Topic> readAllDeleted(Pageable pageable) {
+        return null;
     }
 
     @Override
-    public Topic save(Topic entity) {
-        return repository.save(entity);
+    public Topic postNew(Topic entity) {
+        return null;
     }
 
     @Override
