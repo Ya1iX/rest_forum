@@ -8,7 +8,7 @@ import com.plnv.forum.model.Response;
 import com.plnv.forum.model.Role;
 import com.plnv.forum.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.ObjectDeletedException;
+import org.springframework.data.domain.Example;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.LockedException;
@@ -55,7 +55,7 @@ public class AuthService {
     public Response login(LoginRequest request) {
         User user = repository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-        user = (user.isAccountNonLocked() || user.getIsDeleted() ) ? user : checkAccountValidity(user);
+        user = (user.isAccountNonLocked() || user.getIsDeleted()) ? user : checkAccountValidity(user);
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -75,7 +75,7 @@ public class AuthService {
     }
 
     public Response makeFirstAdmin(RegisterRequest request) {
-        if (repository.findByRole(Role.ADMIN).isEmpty()) {
+        if (!repository.exists(Example.of(User.builder().role(Role.ADMIN).build()))) {
             return register(request, Role.ADMIN);
         }
         throw new NoSuchElementException("Page not found");

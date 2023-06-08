@@ -32,6 +32,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
                 .timestamp(LocalDateTime.now())
                 .statusCode(HttpStatus.FORBIDDEN.value())
                 .httpStatus(HttpStatus.FORBIDDEN)
+                .reason(accessDeniedException.getMessage())
                 .build()
         ));
     }

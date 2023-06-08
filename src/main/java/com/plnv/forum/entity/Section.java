@@ -50,6 +50,9 @@ public class Section {
     private Boolean isPinned;
 
     @Column(nullable = false)
+    private Boolean isUsersAllowed;
+
+    @Column(nullable = false)
     private Boolean isSecured;
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -68,7 +71,19 @@ public class Section {
     private String iconURL;
 
     @JsonGetter("topics")
-    public Integer getTopics() {
+    public Integer getTopicsSize() {
         return topics == null ? 0 : topics.size();
+    }
+
+    public void setSectionIsDeleted(Boolean isDeleted) {
+        this.topics.forEach(topic -> topic.setTopicIsDeleted(isDeleted));
+        this.setIsDeleted(isDeleted);
+        this.setChangedAt(LocalDateTime.now());
+    }
+
+    public void setSectionIsHidden(Boolean isHidden) {
+        this.topics.forEach(topic -> topic.setTopicIsHidden(isHidden));
+        this.setIsHidden(isHidden);
+        this.setChangedAt(LocalDateTime.now());
     }
 }

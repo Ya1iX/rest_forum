@@ -20,12 +20,24 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+//        if (request.getAttribute("expired") != null) {
+//            response.setStatus(HttpStatus.FORBIDDEN.value());
+//            response.getWriter().write(mapper.writeValueAsString(Response.builder()
+//                    .timestamp(LocalDateTime.now())
+//                    .statusCode(HttpStatus.FORBIDDEN.value())
+//                    .httpStatus(HttpStatus.FORBIDDEN)
+//                    .reason(authException.getMessage())
+//                    .build()));
+//        }
+
         response.setContentType("application/json;charset=UTF-8");
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.getWriter().write(mapper.writeValueAsString(Response.builder()
                 .timestamp(LocalDateTime.now())
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
                 .httpStatus(HttpStatus.UNAUTHORIZED)
+                .reason(authException.getMessage())
                 .build()
         ));
     }

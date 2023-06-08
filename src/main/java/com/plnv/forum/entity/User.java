@@ -124,4 +124,17 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+    public void setUserIsDeleted(Boolean isDeleted) {
+        this.topics.forEach(topic -> topic.setTopicIsDeleted(isDeleted));
+        this.messages.forEach(message -> message.setMessageIsDeleted(isDeleted));
+        this.setIsDeleted(isDeleted);
+    }
+
+    public void setUserIsLocked(Boolean isLocked, LocalDateTime lockExpiration) {
+        this.topics.forEach(topic -> topic.setTopicIsHidden(isLocked));
+        this.messages.forEach(message -> message.setMessageIsHidden(isLocked));
+        this.setIsLocked(isLocked);
+        this.setLockExpiration(isLocked ? lockExpiration : null);
+    }
 }

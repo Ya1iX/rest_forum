@@ -21,17 +21,18 @@ import java.util.List;
 public class Topic {
     @Id
     @SequenceGenerator(
-            name = "sections_sequence",
-            sequenceName = "sections_sequence",
+            name = "topics_sequence",
+            sequenceName = "topics_sequence",
             allocationSize = 1
     )
     @GeneratedValue(
             strategy = GenerationType.SEQUENCE,
-            generator = "sections_sequence"
+            generator = "topics_sequence"
     )
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(nullable = false)
     private Section section;
 
     @OneToMany
@@ -39,6 +40,7 @@ public class Topic {
     private List<Message> messages;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(nullable = false)
     private User user;
 
     @Column(nullable = false)
@@ -84,17 +86,29 @@ public class Topic {
     private LocalDateTime changedAt;
 
     @JsonGetter("section")
-    public Long getSection() {
+    public Long getSectionId() {
         return section.getId();
     }
 
     @JsonGetter("messages")
-    public Integer getMessages() {
+    public Integer getMessagesSize() {
         return messages == null ? 0 : messages.size();
     }
 
     @JsonGetter("user")
-    public String getUser() {
+    public String getUserName() {
         return user.getUsername();
+    }
+
+    public void setTopicIsDeleted(Boolean isDeleted) {
+        this.messages.forEach(message -> message.setMessageIsDeleted(isDeleted));
+        this.setIsDeleted(isDeleted);
+        this.setChangedAt(LocalDateTime.now());
+    }
+
+    public void setTopicIsHidden(Boolean isHidden) {
+        this.messages.forEach(message -> message.setMessageIsHidden(isHidden));
+        this.setIsHidden(isHidden);
+        this.setChangedAt(LocalDateTime.now());
     }
 }

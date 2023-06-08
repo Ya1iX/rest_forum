@@ -5,7 +5,6 @@ import com.plnv.forum.model.Response;
 import com.plnv.forum.service.SectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,54 +17,16 @@ import java.util.Map;
 @RequestMapping("/api/v1/sections")
 @RequiredArgsConstructor
 public class SectionController {
-    private final SectionService service; //TODO: Скрывать пароли при включенном secured; Поработать с фильтром, избавиться от Null Exception
+    private final SectionService service;
 
     @GetMapping
-    public ResponseEntity<Response> getAllSections(Pageable pageable) {
+    public ResponseEntity<Response> getAll(Section section, Pageable pageable) {
         return ResponseEntity.ok(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
-                        .data(Map.of("sections", service.readAll(pageable)))
-                        .build()
-        );
-    }
-
-    @GetMapping("/filter")
-    public ResponseEntity<Response> getAllSectionByFilter(
-            @RequestParam(required = false) Long id,
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String description,
-            @RequestParam(required = false) String tags,
-            @RequestParam(required = false) Boolean isPinned,
-            @RequestParam(required = false) Boolean isSecured,
-            @RequestParam(required = false) String password,
-            @RequestParam(required = false) Boolean isHidden,
-            @RequestParam(required = false) Boolean isDeleted,
-            @RequestParam(required = false)  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAt,
-            @RequestParam(required = false)  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime changedAt,
-            @RequestParam(required = false) String iconURL
-            ) {
-        return ResponseEntity.ok(
-                Response.builder()
-                        .timestamp(LocalDateTime.now())
-                        .statusCode(HttpStatus.OK.value())
-                        .httpStatus(HttpStatus.OK)
-                        .data(Map.of("sections", service.readAll(
-                                id,
-                                name,
-                                description,
-                                tags,
-                                isPinned,
-                                isSecured,
-                                password,
-                                isHidden,
-                                isDeleted,
-                                createdAt,
-                                changedAt,
-                                iconURL
-                        )))
+                        .data(Map.of("sections", service.readAll(section, pageable)))
                         .build()
         );
     }
@@ -78,19 +39,6 @@ public class SectionController {
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
                         .data(Map.of("section", service.readById(id)))
-                        .build()
-        );
-    }
-
-    @GetMapping("/any/{id}")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Response> getAnySectionById(@PathVariable Long id) {
-        return ResponseEntity.ok(
-                Response.builder()
-                        .timestamp(LocalDateTime.now())
-                        .statusCode(HttpStatus.OK.value())
-                        .httpStatus(HttpStatus.OK)
-                        .data(Map.of("section", service.readAnyById(id)))
                         .build()
         );
     }
@@ -149,6 +97,20 @@ public class SectionController {
         );
     }
 
+    @PutMapping("/{id}/hide")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<Response> hideSection(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                Response.builder()
+                        .timestamp(LocalDateTime.now())
+                        .statusCode(HttpStatus.OK.value())
+                        .httpStatus(HttpStatus.OK)
+                        .message("Hidden successfully")
+                        .data(Map.of("section", service.setIsHiddenById(id, true)))
+                        .build()
+        );
+    }
+
     @PutMapping("/{id}/restore")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Response> restoreSection(@PathVariable Long id) {
@@ -158,7 +120,21 @@ public class SectionController {
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
                         .message("Restored successfully")
-                        .data(Map.of("section", service.restoreById(id)))
+                        .data(Map.of("section", service.setIsDeletedById(id, false)))
+                        .build()
+        );
+    }
+
+    @PutMapping("/{id}/expose")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<Response> exposeSection(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                Response.builder()
+                        .timestamp(LocalDateTime.now())
+                        .statusCode(HttpStatus.OK.value())
+                        .httpStatus(HttpStatus.OK)
+                        .message("Exposed successfully")
+                        .data(Map.of("section", service.setIsHiddenById(id, false)))
                         .build()
         );
     }
@@ -172,7 +148,7 @@ public class SectionController {
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
                         .message("Deleted successfully")
-                        .data(Map.of("section", service.deleteById(id)))
+                        .data(Map.of("section", service.setIsDeletedById(id, true)))
                         .build()
         );
     }

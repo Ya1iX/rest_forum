@@ -25,68 +25,32 @@ public class SectionServiceImpl implements SectionService {
 
     @Override
     public Section readById(Long id) {
-        Section section = repository.findByIdAndIsDeletedAndIsHidden(id, false, false).orElseThrow(() -> new NoSuchElementException("Section not found by id: " + id));
-        if (section.getIsDeleted()) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.ADMIN.name()));
+        boolean isModer = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.MODER.name()));
+        Section section = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Section not found by id: " + id));
+
+        if ((section.getIsHidden() | section.getIsDeleted()) & (!isAdmin & !isModer)) {
             throw new NoSuchElementException("Section not found by id: " + id);
         }
+
         return section;
     }
 
     @Override
-    public List<Section> readAll(
-            Long id,
-            String name,
-            String description,
-            String tags,
-            Boolean isPinned,
-            Boolean isSecured,
-            String password,
-            Boolean isHidden,
-            Boolean isDeleted,
-            LocalDateTime createdAt,
-            LocalDateTime changedAt,
-            String iconURL
-    ) {
+    public List<Section> readAll(Section entity, Pageable pageable) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isAdmin = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.ADMIN.name()));
         boolean isModer = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.MODER.name()));
 
         if (!(isAdmin | isModer)) {
-            isHidden = false;
+            entity.setIsHidden(false);
         }
         if (!isAdmin) {
-            isDeleted = false;
+            entity.setIsDeleted(false);
         }
 
-        Section section = Section.builder()
-                .id(id)
-                .name(name)
-                .description(description)
-                .tags(tags)
-                .isPinned(isPinned)
-                .isSecured(isSecured)
-                .password(password)
-                .isHidden(isHidden)
-                .isDeleted(isDeleted)
-                .createdAt(createdAt)
-                .changedAt(changedAt)
-                .iconURL(iconURL)
-                .build();
-        return repository.findAll(Example.of(section));
-    }
-
-    @Override
-    public Section readAnyById(Long id) {
-        Section section = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Section not found or was deleted by id: " + id));
-        if (section.getIsDeleted()) {
-            throw new NoSuchElementException("Section not found by id: " + id);
-        }
-        return section;
-    }
-
-    @Override
-    public List<Section> readAll(Pageable pageable) {
-        return repository.findAllByIsDeletedAndIsHidden(false, false, pageable);
+        return repository.findAll(Example.of(entity), pageable).toList();
     }
 
     @Override
@@ -99,11 +63,19 @@ public class SectionServiceImpl implements SectionService {
         return repository.findAllByIsDeletedAndIsHidden(false, true, pageable);
     }
 
+
+
     @Override
-    public Section deleteById(Long id) {
+    public Section setIsDeletedById(Long id, Boolean isDeleted) {
         Section section = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Section not found by id: " + id));
-        section.setIsDeleted(true);
-        section.setChangedAt(LocalDateTime.now());
+        section.setSectionIsDeleted(isDeleted);
+        return repository.save(section);
+    }
+
+    @Override
+    public Section setIsHiddenById(Long id, Boolean isHidden) {
+        Section section = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Section not found by id: " + id));
+        section.setSectionIsHidden(isHidden);
         return repository.save(section);
     }
 
@@ -113,24 +85,15 @@ public class SectionServiceImpl implements SectionService {
     }
 
     @Override
-    public Section restoreById(Long id) {
-        Section section = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Section not found by id: " + id));
-        section.setIsDeleted(false);
-        section.setChangedAt(LocalDateTime.now());
-        return repository.save(section);
-    }
-
-    @Override
     public Section edit(Section entity, Long id) {
         Section section = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Section not found by id: " + id));
         section.setName(entity.getName() == null ? section.getName() : entity.getName());
         section.setDescription(entity.getDescription() == null ? section.getDescription() : entity.getDescription());
         section.setTags(entity.getTags() == null ? section.getTags() : entity.getTags());
         section.setIsPinned(entity.getIsPinned() == null ? section.getIsPinned() : entity.getIsPinned());
-        section.setIsDeleted(entity.getIsDeleted() == null ? section.getIsDeleted() : entity.getIsDeleted());
-        section.setIsHidden(entity.getIsHidden() == null ? section.getIsHidden() : entity.getIsHidden());
-        section.setIsSecured(entity.getIsSecured() == null ? section.getIsSecured() : entity.getIsSecured());
-        section.setPassword(entity.getPassword() == null ? section.getPassword() : passwordEncoder.encode(entity.getPassword()));
+        section.setIsUsersAllowed(entity.getIsUsersAllowed() == null ? section.getIsUsersAllowed() : entity.getIsUsersAllowed());
+        section.setIsSecured(entity.getPassword() == null ? section.getIsSecured() : !entity.getPassword().isBlank());
+        section.setPassword(entity.getPassword() == null ? section.getPassword() : (entity.getPassword().isBlank() ? null : passwordEncoder.encode(entity.getPassword())));
         section.setChangedAt(LocalDateTime.now());
         section.setIconURL(entity.getIconURL() == null ? section.getIconURL() : entity.getIconURL());
         return repository.save(section);
@@ -143,10 +106,11 @@ public class SectionServiceImpl implements SectionService {
                 .description(entity.getDescription())
                 .tags(entity.getTags())
                 .isPinned(false)
+                .isUsersAllowed(true)
                 .isDeleted(false)
                 .isHidden(false)
-                .isSecured(entity.getIsSecured())
-                .password(entity.getPassword() == null ? null : passwordEncoder.encode(entity.getPassword()))
+                .isSecured(entity.getPassword() != null && !entity.getPassword().isBlank())
+                .password(entity.getPassword() == null ? null : (entity.getPassword().isBlank() ? null : passwordEncoder.encode(entity.getPassword())))
                 .createdAt(LocalDateTime.now())
                 .changedAt(LocalDateTime.now())
                 .iconURL(entity.getIconURL())

@@ -23,9 +23,11 @@ public class Message {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(nullable = false)
     private Topic topic;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(nullable = false)
     private User user;
 
     @Column(nullable = false)
@@ -49,12 +51,22 @@ public class Message {
     private LocalDateTime changedAt;
 
     @JsonGetter("topic")
-    public Long getTopic() {
+    public Long getTopicId() {
         return topic.getId();
     }
 
     @JsonGetter("user")
-    public String getUser() {
+    public String getUserName() {
         return user.getUsername();
+    }
+
+    public void setMessageIsDeleted(Boolean isDeleted) {
+        this.setIsDeleted(isDeleted);
+        this.setChangedAt(LocalDateTime.now());
+    }
+
+    public void setMessageIsHidden(Boolean isHidden) {
+        this.setIsHidden(isHidden);
+        this.setChangedAt(LocalDateTime.now());
     }
 }

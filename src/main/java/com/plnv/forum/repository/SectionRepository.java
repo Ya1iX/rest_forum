@@ -10,7 +10,6 @@ import java.util.Optional;
 
 @Repository
 public interface SectionRepository extends JpaRepository<Section, Long> {
-    // SELECT * FROM Sections WHERE isDeleted = false
     List<Section> findAllByIsDeletedAndIsHidden(Boolean isDeleted, Boolean isHidden, Pageable pageable);
     List<Section> findAllByIsDeleted(Boolean isDeleted, Pageable pageable);
     Optional<Section> findByIdAndIsDeletedAndIsHidden(Long id, Boolean isDeleted, Boolean isHidden);
