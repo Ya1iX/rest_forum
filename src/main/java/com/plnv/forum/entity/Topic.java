@@ -58,9 +58,6 @@ public class Topic {
     private String tags;
 
     @Column(nullable = false)
-    private Integer rating;
-
-    @Column(nullable = false)
     private Boolean isVerified;
 
     @Column(nullable = false)

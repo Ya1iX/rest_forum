@@ -21,7 +21,7 @@ public class MessageController {
     private final MessageService service;
 
     @GetMapping
-    public ResponseEntity<Response> getAllMessages(Message message, Pageable pageable) {
+    public ResponseEntity<Response> getAllMessages(@RequestBody(required = false) Message message, Pageable pageable) {
         return ResponseEntity.ok(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
@@ -33,13 +33,13 @@ public class MessageController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Response> getMessageById(@PathVariable UUID id) {
+    public ResponseEntity<Response> getMessageById(@PathVariable UUID id, @RequestBody(required = false) Message message) {
         return ResponseEntity.status(HttpStatus.OK).body(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
-                        .data(Map.of("message", service.readById(id)))
+                        .data(Map.of("message", service.readById(id, message)))
                         .build()
         );
     }

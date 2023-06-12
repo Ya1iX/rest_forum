@@ -30,7 +30,10 @@ public class SectionServiceImpl implements SectionService {
         boolean isModer = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.MODER.name()));
         Section section = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Section not found by id: " + id));
 
-        if ((section.getIsHidden() | section.getIsDeleted()) & (!isAdmin & !isModer)) {
+        if (section.getIsHidden() & (!isAdmin & !isModer)) {
+            throw new NoSuchElementException("Section not found by id: " + id);
+        }
+        if (section.getIsDeleted() & !isAdmin) {
             throw new NoSuchElementException("Section not found by id: " + id);
         }
 
@@ -42,6 +45,10 @@ public class SectionServiceImpl implements SectionService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isAdmin = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.ADMIN.name()));
         boolean isModer = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.MODER.name()));
+
+        if (entity == null) {
+            entity = Section.builder().build();
+        }
 
         if (!(isAdmin | isModer)) {
             entity.setIsHidden(false);

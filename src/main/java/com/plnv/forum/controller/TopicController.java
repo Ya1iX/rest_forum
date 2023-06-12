@@ -20,7 +20,7 @@ public class TopicController {
     private final TopicService service;
 
     @GetMapping
-    public ResponseEntity<Response> getAll(Topic topic, Pageable pageable) {
+    public ResponseEntity<Response> getAll(@RequestBody(required = false) Topic topic, Pageable pageable) {
         return ResponseEntity.ok(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
@@ -32,13 +32,13 @@ public class TopicController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Response> getTopicById(@PathVariable Long id) {
+    public ResponseEntity<Response> getTopicById(@PathVariable Long id, @RequestBody(required = false) Topic topic) {
         return ResponseEntity.ok(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
-                        .data(Map.of("topic", service.readById(id)))
+                        .data(Map.of("topic", service.readById(id, topic)))
                         .build()
         );
     }

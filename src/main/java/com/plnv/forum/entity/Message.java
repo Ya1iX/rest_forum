@@ -35,9 +35,6 @@ public class Message {
     private String text;
 
     @Column(nullable = false)
-    private Integer rating;
-
-    @Column(nullable = false)
     private Boolean isPinned;
 
     @Column(nullable = false)

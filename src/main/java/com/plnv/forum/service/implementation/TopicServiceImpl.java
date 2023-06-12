@@ -47,12 +47,14 @@ public class TopicServiceImpl implements TopicService {
         }
 
         if (topic.getSection().getIsSecured() & (!isAdmin & !isModer)) {
-            if (entity.getSection().getPassword() == null) {
-                throw new AccessDeniedException("Please, enter the password for section: " + topic.getSection().getName());
+            if (entity.getSection() != null && entity.getSection().getPassword() != null) {
+                if (!passwordEncoder.matches(entity.getSection().getPassword(), topic.getSection().getPassword())) {
+                    throw new AccessDeniedException("Wrong section password");
+                }
+            } else {
+                throw new AccessDeniedException("Section requires password: " + topic.getSection().getName());
             }
-            if (!passwordEncoder.matches(entity.getSection().getPassword(), topic.getSection().getPassword())) {
-                throw new AccessDeniedException("Wrong section password");
-            }
+
         }
 
         if (isAdmin | isModer) {
@@ -85,9 +87,24 @@ public class TopicServiceImpl implements TopicService {
         boolean isAdmin = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.ADMIN.name()));
         boolean isModer = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.MODER.name()));
 
+        if (entity == null) {
+            entity = Topic.builder().build();
+        }
         if (!(isAdmin | isModer)) {
             entity.setIsHidden(false);
-            entity.getSection().setIsSecured(false);
+
+            // Проверка на запароленность раздела
+            if (entity.getSection() != null && entity.getSectionId() != null) {
+                Section section = sectionRepository.findById(entity.getSectionId()).orElseThrow(() -> new NoSuchElementException("Section not found"));
+                if (section.getIsSecured()) {
+                    entity.getSection().setIsSecured(passwordEncoder.matches(entity.getSection().getPassword(), section.getPassword()));
+                    entity.getSection().setPassword(null);
+                }
+            } else if (entity.getSection() != null) {
+                entity.getSection().setIsSecured(false);
+            } else {
+                entity.setSection(Section.builder().isSecured(false).build());
+            }
         }
         if (!isAdmin) {
             entity.setIsDeleted(false);
@@ -150,7 +167,6 @@ public class TopicServiceImpl implements TopicService {
                 .description(entity.getDescription())
                 .text(entity.getText())
                 .tags(entity.getTags())
-                .rating(0)
                 .isVerified(false)
                 .isPinned(false)
                 .isSecured(entity.getPassword() != null && !entity.getPassword().isBlank())
@@ -165,7 +181,7 @@ public class TopicServiceImpl implements TopicService {
     }
 
     @Override
-    public Topic readById(Long id) {
+    public Topic readById(Long id, Topic entity) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isAdmin = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.ADMIN.name()));
         boolean isModer = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.MODER.name()));
@@ -173,6 +189,16 @@ public class TopicServiceImpl implements TopicService {
 
         if ((topic.getIsHidden() | topic.getIsDeleted()) & (!isAdmin & !isModer)) {
             throw new NoSuchElementException("Topic not found by id: " + id);
+        }
+        // Проверка на запароленность раздела
+        if (topic.getSection().getIsSecured() & (!isAdmin & !isModer)) {
+            if (entity.getSection() != null && entity.getSection().getPassword() != null) {
+                if (!passwordEncoder.matches(entity.getSection().getPassword(), topic.getSection().getPassword())) {
+                    throw new AccessDeniedException("Wrong section password");
+                }
+            } else {
+                throw new AccessDeniedException("Section requires password");
+            }
         }
 
         return topic;

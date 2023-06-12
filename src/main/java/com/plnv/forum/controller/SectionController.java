@@ -20,7 +20,7 @@ public class SectionController {
     private final SectionService service;
 
     @GetMapping
-    public ResponseEntity<Response> getAll(Section section, Pageable pageable) {
+    public ResponseEntity<Response> getAll(@RequestBody(required = false) Section section, Pageable pageable) {
         return ResponseEntity.ok(
                 Response.builder()
                         .timestamp(LocalDateTime.now())

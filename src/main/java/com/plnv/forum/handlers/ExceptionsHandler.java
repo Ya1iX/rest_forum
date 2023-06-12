@@ -40,8 +40,8 @@ public class ExceptionsHandler {
         );
     }
 
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Response> handleIllegalStateException(IllegalStateException e) {
+    @ExceptionHandler({IllegalStateException.class, IllegalArgumentException.class})
+    public ResponseEntity<Response> handleIllegalStateException(RuntimeException e) {
         log.error(e.getMessage());
         return ResponseEntity.badRequest().body(
                 Response.builder()
