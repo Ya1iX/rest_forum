@@ -3,6 +3,7 @@ package com.plnv.forum.controller;
 import com.plnv.forum.entity.Message;
 import com.plnv.forum.model.Response;
 import com.plnv.forum.service.MessageService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -72,7 +73,7 @@ public class MessageController {
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('USER','MODER','ADMIN')")
-    public ResponseEntity<Response> postMessage(@RequestBody Message message) {
+    public ResponseEntity<Response> postMessage(@RequestBody @Valid Message message) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 Response.builder()
                         .timestamp(LocalDateTime.now())

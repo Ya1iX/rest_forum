@@ -3,6 +3,7 @@ package com.plnv.forum.entity;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,6 +45,7 @@ public class Topic {
     private User user;
 
     @Column(nullable = false)
+    @NotBlank(message = "Topic's name cannot be blank")
     @Size(min = 4, message = "Topic's name cannot be shorter than 4 symbols")
     @Size(max = 50, message = "Topic's name cannot be longer than 50 symbols")
     private String name;

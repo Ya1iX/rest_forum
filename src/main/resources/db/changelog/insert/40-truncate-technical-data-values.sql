@@ -1,0 +1,3 @@
+TRUNCATE TABLE technical_data CASCADE
+
+GO

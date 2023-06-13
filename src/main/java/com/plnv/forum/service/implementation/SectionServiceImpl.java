@@ -119,7 +119,6 @@ public class SectionServiceImpl implements SectionService {
                 .isSecured(entity.getPassword() != null && !entity.getPassword().isBlank())
                 .password(entity.getPassword() == null ? null : (entity.getPassword().isBlank() ? null : passwordEncoder.encode(entity.getPassword())))
                 .createdAt(LocalDateTime.now())
-                .changedAt(LocalDateTime.now())
                 .iconURL(entity.getIconURL())
                 .build());
     }

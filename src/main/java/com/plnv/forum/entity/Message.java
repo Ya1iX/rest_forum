@@ -2,6 +2,7 @@ package com.plnv.forum.entity;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,6 +32,7 @@ public class Message {
     private User user;
 
     @Column(nullable = false)
+    @NotBlank(message = "Message's text cannot be blank")
     @Size(max = 3000, message = "Message's text cannot be longer than 3000")
     private String text;
 

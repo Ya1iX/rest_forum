@@ -3,6 +3,7 @@ package com.plnv.forum.controller;
 import com.plnv.forum.entity.User;
 import com.plnv.forum.model.Response;
 import com.plnv.forum.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -59,7 +60,7 @@ public class UserController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Response> createNewUser(@RequestBody User user) {
+    public ResponseEntity<Response> createNewUser(@RequestBody @Valid User user) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 Response.builder()
                         .timestamp(LocalDateTime.now())

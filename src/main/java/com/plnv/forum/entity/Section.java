@@ -3,11 +3,13 @@ package com.plnv.forum.entity;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.URL;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,6 +38,7 @@ public class Section {
     private List<Topic> topics;
 
     @Column(nullable = false, unique = true)
+    @NotBlank(message = "Section's name cannot be blank")
     @Size(min = 4, message = "Section's name cannot be shorter than 4 symbols")
     @Size(max = 100, message = "Section's name cannot be longer than 100 symbols")
     private String name;
@@ -68,6 +71,8 @@ public class Section {
     private LocalDateTime createdAt;
 
     private LocalDateTime changedAt;
+
+    @URL
     private String iconURL;
 
     @JsonGetter("topics")

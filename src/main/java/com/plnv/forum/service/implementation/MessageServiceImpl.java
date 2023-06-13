@@ -248,7 +248,6 @@ public class MessageServiceImpl implements MessageService {
                 .isHidden(false)
                 .isDeleted(false)
                 .createdAt(LocalDateTime.now())
-                .changedAt(LocalDateTime.now())
                 .build()
         );
     }

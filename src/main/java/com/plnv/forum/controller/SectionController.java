@@ -3,6 +3,7 @@ package com.plnv.forum.controller;
 import com.plnv.forum.entity.Section;
 import com.plnv.forum.model.Response;
 import com.plnv.forum.service.SectionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -71,7 +72,7 @@ public class SectionController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Response> postSection(@RequestBody Section section) {
+    public ResponseEntity<Response> postSection(@RequestBody @Valid Section section) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 Response.builder()
                         .timestamp(LocalDateTime.now())

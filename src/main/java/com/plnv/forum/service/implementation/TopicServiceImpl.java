@@ -175,7 +175,6 @@ public class TopicServiceImpl implements TopicService {
                 .isHidden(false)
                 .isDeleted(false)
                 .createdAt(LocalDateTime.now())
-                .changedAt(LocalDateTime.now())
                 .build()
         );
     }
