@@ -3,6 +3,7 @@ package com.plnv.forum.entity;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,10 +24,12 @@ public class Message {
     @GeneratedValue
     private UUID id;
 
+    @NotNull(message = "Message's topic cannot be null")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
     private Topic topic;
 
+    @NotNull(message = "Message's user cannot be null")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
     private User user;
@@ -47,10 +50,11 @@ public class Message {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+
     private LocalDateTime changedAt;
 
     @JsonGetter("topic")
-    public Long getTopicId() {
+    public Long getTopicName() {
         return topic.getId();
     }
 

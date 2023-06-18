@@ -6,7 +6,6 @@ import com.plnv.forum.entity.Topic;
 import com.plnv.forum.entity.User;
 import com.plnv.forum.model.Role;
 import com.plnv.forum.repository.MessageRepository;
-import com.plnv.forum.repository.SectionRepository;
 import com.plnv.forum.repository.TopicRepository;
 import com.plnv.forum.repository.UserRepository;
 import com.plnv.forum.service.MessageService;
@@ -14,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,7 +31,6 @@ import java.util.UUID;
 public class MessageServiceImpl implements MessageService {
     private final MessageRepository repository;
     private final TopicRepository topicRepository;
-    private final SectionRepository sectionRepository;
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
@@ -44,40 +43,25 @@ public class MessageServiceImpl implements MessageService {
         if (entity == null) {
             entity = Message.builder().build();
         }
-        if (!(isAdmin | isModer)) {
-            entity.setIsHidden(false);
 
-            // Проверка на запароленность топика
-            if (entity.getTopic() != null && entity.getTopicId() != null) {
-                Topic topic = topicRepository.findById(entity.getTopicId()).orElseThrow(() -> new NoSuchElementException("Topic not found"));
-                if (topic.getIsSecured()) {
-                    entity.getTopic().setIsSecured(passwordEncoder.matches(entity.getTopic().getPassword(), topic.getPassword()));
-                    entity.getTopic().setPassword(null);
-                }
-            } else if (entity.getTopic() != null) {
-                entity.getTopic().setIsSecured(false);
-            } else {
+        // Если не админ или модер
+        if (!(isAdmin || isModer)) {
+            // Выводить сообщения только из незапароленных топиков
+            if (entity.getTopic() == null) {
                 entity.setTopic(Topic.builder().isSecured(false).build());
+            } else {
+                entity.getTopic().setIsSecured(false);
+            }
+            // Выводить сообщения только из незапароленных разделов
+            if (entity.getTopic().getSection() == null) {
+                entity.getTopic().setSection(Section.builder().isSecured(false).build());
+            } else {
+                entity.getTopic().getSection().setIsSecured(false);
             }
 
-            // Проверка на запароленность раздела
-            if (entity.getTopic() != null && entity.getTopic().getSection() != null && entity.getTopic().getSectionId() != null) {
-                Section entitySection = entity.getTopic().getSection();
-                Section section = sectionRepository.findById(entitySection.getId()).orElseThrow(() -> new NoSuchElementException("Section not found"));
-                if (section.getIsSecured()) {
-                    entitySection.setIsSecured(passwordEncoder.matches(entitySection.getPassword(), section.getPassword()));
-                    entitySection.setPassword(null);
-                    entity.getTopic().setSection(entitySection);
-                }
-            } else if (entity.getTopic() != null && entity.getTopic().getSection() != null) {
-                entity.getTopic().getSection().setIsSecured(false);
-            } else {
-                entity.getTopic().setSection(Section.builder().isSecured(false).build());
-            }
         }
-        if (!isAdmin) {
-            entity.setIsDeleted(false);
-        }
+        entity.setIsDeleted(false);
+        entity.setIsHidden(false);
 
         return repository.findAll(Example.of(entity), pageable).toList();
     }
@@ -89,12 +73,12 @@ public class MessageServiceImpl implements MessageService {
         boolean isModer = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.MODER.name()));
         Message message = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Message not found by id: " + id));
 
-        if ((message.getIsDeleted() | message.getIsHidden()) & (!isAdmin & !isModer)) {
+        if ((message.getIsDeleted() || message.getIsHidden()) & (!isAdmin & !isModer)) {
             throw new NoSuchElementException("Message not found by id: " + id);
         }
         // Проверка на запароленность топика
         if (message.getTopic().getIsSecured() & (!isAdmin & !isModer)) {
-            if (entity.getTopic() != null && entity.getTopic().getPassword() != null) {
+            if (entity != null && entity.getTopic() != null && entity.getTopic().getPassword() != null) {
                 if (!passwordEncoder.matches(entity.getTopic().getPassword(), message.getTopic().getPassword())) {
                     throw new AccessDeniedException("Wrong topic password");
                 }
@@ -104,7 +88,7 @@ public class MessageServiceImpl implements MessageService {
         }
         // Проверка на запароленность раздела
         if (message.getTopic().getSection().getIsSecured() & (!isAdmin & !isModer)) {
-            if (entity.getTopic() != null && entity.getTopic().getSection() != null && entity.getTopic().getSection().getPassword() != null) {
+            if (entity != null && entity.getTopic() != null && entity.getTopic().getSection() != null && entity.getTopic().getSection().getPassword() != null) {
                 if (!passwordEncoder.matches(entity.getTopic().getSection().getPassword(), message.getTopic().getSection().getPassword())) {
                     throw new AccessDeniedException("Wrong section password");
                 }
@@ -117,11 +101,13 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public List<Message> readAllDeleted(Pageable pageable) {
-        return repository.findAllByIsDeleted(true, pageable);
+    public List<Message> readAllDeleted(Message entity, Pageable pageable) {
+        entity.setIsDeleted(true);
+        return repository.findAll(Example.of(entity), pageable).toList();
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('USER','MODER','ADMIN')")
     public Message edit(Message entity, UUID id) {
         Message message = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Message not found by id: " + id));
         if (message.getIsDeleted()) {
@@ -177,6 +163,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('USER','MODER','ADMIN')")
     public Message setIsDeletedById(UUID id, Boolean isDeleted) {
         Message message = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Message not found by id: " + id));
         message.setIsDeleted(isDeleted);
@@ -185,6 +172,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('MODER','ADMIN')")
     public Message setIsHiddenById(UUID id, Boolean isHidden) {
         Message message = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Message not found by id: " + id));
         message.setIsHidden(isHidden);
@@ -193,11 +181,14 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public List<Message> readAllHidden(Pageable pageable) {
-        return repository.findAllByIsDeletedAndIsHidden(false, true, pageable);
+    public List<Message> readAllHidden(Message entity, Pageable pageable) {
+        entity.setIsHidden(true);
+        entity.setIsDeleted(false);
+        return repository.findAll(Example.of(entity), pageable).toList();
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('USER','MODER','ADMIN')")
     public Message postNew(Message entity) {
         Topic topic = entity.getTopic();
 
@@ -250,10 +241,5 @@ public class MessageServiceImpl implements MessageService {
                 .createdAt(LocalDateTime.now())
                 .build()
         );
-    }
-
-    @Override
-    public void hardDeleteById(UUID id) {
-        repository.deleteById(id);
     }
 }

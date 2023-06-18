@@ -1,7 +1,7 @@
 INSERT INTO messages
         (id,text,topic_id,user_id,created_at,changed_at,is_deleted,is_hidden,is_pinned)
     VALUES
-        (gen_random_uuid(), 'Очень красивая и удобная мишна, жаль что не самая надёжная)', 1, (SELECT id FROM users WHERE username = 'User'), now(), null, false, false, false)
+        (gen_random_uuid(), 'Очень красивая и удобная машина, жаль что не самая надёжная)', 1, (SELECT id FROM users WHERE username = 'User'), now(), null, false, false, false)
 
 GO
 

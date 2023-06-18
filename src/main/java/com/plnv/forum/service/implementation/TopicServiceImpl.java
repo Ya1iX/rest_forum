@@ -1,9 +1,11 @@
 package com.plnv.forum.service.implementation;
 
+import com.plnv.forum.entity.Message;
 import com.plnv.forum.entity.Section;
 import com.plnv.forum.entity.Topic;
 import com.plnv.forum.entity.User;
 import com.plnv.forum.model.Role;
+import com.plnv.forum.repository.MessageRepository;
 import com.plnv.forum.repository.SectionRepository;
 import com.plnv.forum.repository.TopicRepository;
 import com.plnv.forum.repository.UserRepository;
@@ -12,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,9 +32,45 @@ public class TopicServiceImpl implements TopicService {
     private final TopicRepository repository;
     private final UserRepository userRepository;
     private final SectionRepository sectionRepository;
+    private final MessageRepository messageRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
     @Override
+    public List<Message> readMessages(Long id, Topic entity, Pageable pageable) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.ADMIN.name()));
+        boolean isModer = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.MODER.name()));
+        Topic topic = readById(id, entity);
+
+        if (topic.getIsHidden() && (!isAdmin && !isModer)) {
+            throw new NoSuchElementException("Topic not found by id: " + id);
+        }
+        if (topic.getIsDeleted() && !isAdmin) {
+            throw new NoSuchElementException("Topic not found by id: " + id);
+        }
+
+        if (topic.getIsSecured() && !(isAdmin || isModer)) {
+            if (entity != null && entity.getPassword() != null) {
+                if (!passwordEncoder.matches(entity.getPassword(), topic.getPassword())) {
+                    throw new AccessDeniedException("Wrong topic's password: " + topic.getName());
+                }
+            } else {
+                throw new AccessDeniedException("Topic requires password: " + topic.getName());
+            }
+        }
+
+        Message message = Message.builder().topic(topic).build();
+        if (!isAdmin && !isModer) {
+            message.setIsHidden(false);
+        }
+        if (!isAdmin) {
+            message.setIsDeleted(false);
+        }
+        return messageRepository.findAll(Example.of(message), pageable).toList();
+    }
+
+    @Override
+    @PreAuthorize("hasAnyAuthority('USER','MODER','ADMIN')")
     public Topic edit(Topic entity, Long id) {
         Topic topic = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Section not found by id: " + id));
         if (topic.getIsDeleted()) {
@@ -75,9 +114,11 @@ public class TopicServiceImpl implements TopicService {
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('MODER','ADMIN')")
     public Topic setIsHiddenById(Long id, Boolean isHidden) {
         Topic topic = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Topic not found by id: " + id));
         topic.setTopicIsHidden(isHidden);
+        topic.setChangedAt(LocalDateTime.now());
         return repository.save(topic);
     }
 
@@ -90,45 +131,37 @@ public class TopicServiceImpl implements TopicService {
         if (entity == null) {
             entity = Topic.builder().build();
         }
+        // Если не админ или модер
         if (!(isAdmin | isModer)) {
-            entity.setIsHidden(false);
-
-            // Проверка на запароленность раздела
-            if (entity.getSection() != null && entity.getSectionId() != null) {
-                Section section = sectionRepository.findById(entity.getSectionId()).orElseThrow(() -> new NoSuchElementException("Section not found"));
-                if (section.getIsSecured()) {
-                    entity.getSection().setIsSecured(passwordEncoder.matches(entity.getSection().getPassword(), section.getPassword()));
-                    entity.getSection().setPassword(null);
-                }
-            } else if (entity.getSection() != null) {
-                entity.getSection().setIsSecured(false);
-            } else {
+            // Выводить топики только из незапароленных разделов
+            if (entity.getSection() == null) {
                 entity.setSection(Section.builder().isSecured(false).build());
+            } else {
+                entity.getSection().setIsSecured(false);
             }
         }
-        if (!isAdmin) {
-            entity.setIsDeleted(false);
-        }
+
+        entity.setIsHidden(false);
+        entity.setIsDeleted(false);
 
         return repository.findAll(Example.of(entity), pageable).toList();
     }
 
     @Override
-    public List<Topic> readAllHidden(Pageable pageable) {
-        return repository.findAllByIsDeletedAndIsHidden(false, true, pageable);
+    public List<Topic> readAllHidden(Topic entity, Pageable pageable) {
+        entity.setIsHidden(true);
+        entity.setIsDeleted(false);
+        return repository.findAll(Example.of(entity), pageable).toList();
     }
 
     @Override
-    public void hardDeleteById(Long id) {
-        repository.deleteById(id);
+    public List<Topic> readAllDeleted(Topic entity, Pageable pageable) {
+        entity.setIsDeleted(true);
+        return repository.findAll(Example.of(entity), pageable).toList();
     }
 
     @Override
-    public List<Topic> readAllDeleted(Pageable pageable) {
-        return repository.findAllByIsDeleted(true, pageable);
-    }
-
-    @Override
+    @PreAuthorize("hasAnyAuthority('USER','MODER','ADMIN')")
     public Topic postNew(Topic entity) {
         Section section = entity.getSection();
 
@@ -186,17 +219,20 @@ public class TopicServiceImpl implements TopicService {
         boolean isModer = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.MODER.name()));
         Topic topic = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Topic not found by id: " + id));
 
-        if ((topic.getIsHidden() | topic.getIsDeleted()) & (!isAdmin & !isModer)) {
+        if (topic.getIsHidden() && (!isAdmin && !isModer)) {
+            throw new NoSuchElementException("Topic not found by id: " + id);
+        }
+        if (topic.getIsDeleted() && !isAdmin) {
             throw new NoSuchElementException("Topic not found by id: " + id);
         }
         // Проверка на запароленность раздела
         if (topic.getSection().getIsSecured() & (!isAdmin & !isModer)) {
-            if (entity.getSection() != null && entity.getSection().getPassword() != null) {
+            if (entity != null && entity.getSection() != null && entity.getSection().getPassword() != null) {
                 if (!passwordEncoder.matches(entity.getSection().getPassword(), topic.getSection().getPassword())) {
-                    throw new AccessDeniedException("Wrong section password");
+                    throw new AccessDeniedException("Wrong section's password: " + topic.getSection().getName());
                 }
             } else {
-                throw new AccessDeniedException("Section requires password");
+                throw new AccessDeniedException("Section requires password: " + topic.getSection().getName());
             }
         }
 
@@ -204,9 +240,11 @@ public class TopicServiceImpl implements TopicService {
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('MODER','ADMIN')")
     public Topic setIsDeletedById(Long id, Boolean isDeleted) {
         Topic topic = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Topic not found by id: " + id));
         topic.setTopicIsDeleted(isDeleted);
+        topic.setChangedAt(LocalDateTime.now());
         return repository.save(topic);
     }
 }

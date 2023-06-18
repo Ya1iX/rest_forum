@@ -39,8 +39,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<User> readAllDeleted(Pageable pageable) {
-        return repository.findAllByIsDeleted(true, pageable);
+    public List<User> readAllDeleted(User entity, Pageable pageable) {
+        entity.setIsDeleted(true);
+        return repository.findAll(Example.of(entity), pageable).toList();
     }
 
     @Override
@@ -139,10 +140,5 @@ public class UserServiceImpl implements UserService {
         }
 
         return user;
-    }
-
-    @Override
-    public void hardDeleteById(UUID id) {
-        repository.deleteById(id);
     }
 }

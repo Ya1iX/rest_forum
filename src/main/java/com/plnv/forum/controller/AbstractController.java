@@ -1,10 +1,8 @@
 package com.plnv.forum.controller;
 
-import com.plnv.forum.entity.User;
 import com.plnv.forum.model.Response;
-import com.plnv.forum.service.UserService;
+import com.plnv.forum.service.Service;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,129 +12,134 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-@RestController
-@RequestMapping("/api/v1/users")
-@RequiredArgsConstructor
-public class UserController {
-    private final UserService service;
+public abstract class AbstractController<T, ID> {
+    public abstract Service<T, ID> getService();
 
     @GetMapping
-    public ResponseEntity<Response> getAll(User user, Pageable pageable) {
+    public ResponseEntity<Response> getAll(T entity, Pageable pageable) {
         return ResponseEntity.ok(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
-                        .data(Map.of("users", service.readAll(user, pageable)))
+                        .data(Map.of("entities", getService().readAll(entity, pageable)))
                         .build()
         );
     }
 
-    @GetMapping("/{username}")
-    public ResponseEntity<Response> getUserByUsername(@PathVariable String username) {
+    @GetMapping("/{id}")
+    public ResponseEntity<Response> getById(@PathVariable ID id, @RequestBody(required = false) T entity) {
         return ResponseEntity.ok(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
-                        .data(Map.of("user", service.readByUsername(username)))
+                        .data(Map.of("entity", getService().readById(id, entity)))
                         .build()
         );
     }
 
     @GetMapping("/deleted")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Response> getAllDeleted(User user, Pageable pageable) {
+    public ResponseEntity<Response> getAllDeleted(T entity, Pageable pageable) {
         return ResponseEntity.ok(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
-                        .data(Map.of("users", service.readAllDeleted(user, pageable)))
+                        .data(Map.of("entities", getService().readAllDeleted(entity, pageable)))
+                        .build()
+        );
+    }
+
+    @GetMapping("/hidden")
+    @PreAuthorize("hasAnyAuthority('MODER','ADMIN')")
+    public ResponseEntity<Response> getAllHidden(T entity, Pageable pageable) {
+        return ResponseEntity.ok(
+                Response.builder()
+                        .timestamp(LocalDateTime.now())
+                        .statusCode(HttpStatus.OK.value())
+                        .httpStatus(HttpStatus.OK)
+                        .data(Map.of("entities", getService().readAllHidden(entity, pageable)))
                         .build()
         );
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Response> createNewUser(@RequestBody @Valid User user) {
+    public ResponseEntity<Response> post(@RequestBody @Valid T entity) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
                         .statusCode(HttpStatus.CREATED.value())
                         .httpStatus(HttpStatus.CREATED)
                         .message("Created successfully")
-                        .data(Map.of("user", service.postNew(user)))
+                        .data(Map.of("entity", getService().postNew(entity)))
                         .build()
         );
     }
 
-    @PutMapping("/{username}")
-    @PreAuthorize("hasAnyAuthority('USER', 'MODER', 'ADMIN')")
-    public ResponseEntity<Response> editUser(@RequestBody User user, @PathVariable String username) {
-        return ResponseEntity.ok(
+    @PutMapping("/{id}")
+    public ResponseEntity<Response> edit(@RequestBody T entity, @PathVariable ID id) {
+        return ResponseEntity.status(HttpStatus.OK).body(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
                         .message("Edited successfully")
-                        .data(Map.of("user", service.edit(user, username)))
+                        .data(Map.of("entity", getService().edit(entity, id)))
                         .build()
         );
     }
 
-    @PutMapping("/{username}/lock")
-    @PreAuthorize("hasAnyAuthority('MODER', 'ADMIN')")
-    public ResponseEntity<Response> lockUser(@PathVariable String username, @RequestBody(required = false) LocalDateTime lockExpiration) {
-        return ResponseEntity.ok(
+    @PutMapping("/{id}/hide")
+    public ResponseEntity<Response> hide(@PathVariable ID id) {
+        return ResponseEntity.status(HttpStatus.OK).body(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
-                        .message("Locked successfully")
-                        .data(Map.of("user", service.setIsLockedByUsername(username, true, lockExpiration)))
+                        .message("Hidden successfully")
+                        .data(Map.of("entity", getService().setIsHiddenById(id, true)))
                         .build()
         );
     }
 
-    @PutMapping("/{username}/unlock")
-    @PreAuthorize("hasAnyAuthority('MODER', 'ADMIN')")
-    public ResponseEntity<Response> unlockUser(@PathVariable String username) {
-        return ResponseEntity.ok(
+    @PutMapping("/{id}/expose")
+    public ResponseEntity<Response> expose(@PathVariable ID id) {
+        return ResponseEntity.status(HttpStatus.OK).body(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
-                        .message("Unlocked successfully")
-                        .data(Map.of("user", service.setIsLockedByUsername(username, false, null)))
+                        .message("Exposed successfully")
+                        .data(Map.of("entity", getService().setIsHiddenById(id, false)))
                         .build()
         );
     }
 
-    @PutMapping("/{username}/restore")
+    @PutMapping("/{id}/restore")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Response> restoreUser(@PathVariable String username) {
-        return ResponseEntity.ok(
+    public ResponseEntity<Response> restore(@PathVariable ID id) {
+        return ResponseEntity.status(HttpStatus.OK).body(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
                         .message("Restored successfully")
-                        .data(Map.of("user", service.setIsDeletedByUsername(username, false)))
+                        .data(Map.of("entity", getService().setIsDeletedById(id, false)))
                         .build()
         );
     }
 
-    @DeleteMapping("/{username}")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Response> softDelete(@PathVariable String username) {
-        return ResponseEntity.ok(
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Response> delete(@PathVariable ID id) {
+        return ResponseEntity.status(HttpStatus.OK).body(
                 Response.builder()
                         .timestamp(LocalDateTime.now())
                         .statusCode(HttpStatus.OK.value())
                         .httpStatus(HttpStatus.OK)
                         .message("Deleted successfully")
-                        .data(Map.of("user", service.setIsDeletedByUsername(username, false)))
+                        .data(Map.of("entity", getService().setIsDeletedById(id, true)))
                         .build()
         );
     }
