@@ -166,6 +166,14 @@ public class MessageServiceImpl implements MessageService {
     @PreAuthorize("hasAnyAuthority('USER','MODER','ADMIN')")
     public Message setIsDeletedById(UUID id, Boolean isDeleted) {
         Message message = repository.findById(id).orElseThrow(() -> new NoSuchElementException("Message not found by id: " + id));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.ADMIN.name()));
+        boolean isModer = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.MODER.name()));
+
+        if ((!message.getUserName().equals(auth.getName()) || message.getIsDeleted() || message.getIsHidden()) && !(isAdmin || isModer)) {
+            throw new AccessDeniedException("You have not permission to delete this message");
+        }
+
         message.setIsDeleted(isDeleted);
         message.setChangedAt(LocalDateTime.now());
         return repository.save(message);

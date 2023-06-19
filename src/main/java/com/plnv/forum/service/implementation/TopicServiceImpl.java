@@ -81,7 +81,7 @@ public class TopicServiceImpl implements TopicService {
         boolean isAdmin = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.ADMIN.name()));
         boolean isModer = auth.getAuthorities().contains(new SimpleGrantedAuthority(Role.MODER.name()));
 
-        if ((!topic.getUserName().equals(auth.getName()) | topic.getIsHidden()) & (!isAdmin & !isModer)) {
+        if ((!topic.getUserName().equals(auth.getName()) || topic.getIsHidden()) & (!isAdmin & !isModer)) {
             throw new AccessDeniedException("You have not permission to edit this topic");
         }
 
