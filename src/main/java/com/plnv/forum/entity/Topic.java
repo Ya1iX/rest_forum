@@ -42,7 +42,6 @@ public class Topic {
     @JoinColumn(name = "topic_id")
     private List<Message> messages;
 
-    @NotNull(message = "Topic's user cannot be null")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
     private User user;
